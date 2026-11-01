@@ -94,7 +94,7 @@ const num = v => v==null ? '—' : v.toLocaleString('fr-BE');
 const pct = (a,b) => (a==null||!b) ? null : (a-b)/b*100;
 const dlt = p => p==null ? '<span class="flat">—</span>' : `<span class="delta ${p>0.5?'up':p<-0.5?'down':'flat'}">${p>0?'+':''}${p.toFixed(1).replace('.',',')} %</span>`;
 
-const PIN_HASH='d398b29d3dbbb9bf201d4c7e1c19ff9d43c15fd45a0cec46fbe9885ec3f6e97f';
+const PIN_HASH='6c8b7c96491654021accb7c2e7a773323dcb2b5a86e82cb1bdc98e6d6e6e92b7';
 async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function start(){
   document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='';
