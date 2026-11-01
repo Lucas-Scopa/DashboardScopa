@@ -1,0 +1,1 @@
+{"name": "Dashboard Scopa", "short_name": "Dashboard Scopa", "start_url": "./", "display": "standalone", "background_color": "#f6f4ec", "theme_color": "#085080", "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}]}

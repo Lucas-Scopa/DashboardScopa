@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Dashboard Scopa">
+<meta name="theme-color" content="#085080"><meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="icon.png"><link rel="icon" href="icon.png"><link rel="manifest" href="manifest.webmanifest">
+<title>Dashboard Scopa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--surface:#f6f4ec;--card:#fffdf7;--line:#e4e0d2;--text:#0e2a40;--text2:#4f6273;--muted:#8a95a0;
+--navy:#085080;--sky:#70b0c0;--red:#d02830;--cream:#ece8d8;
+--s1:#1f6f9f;--s2:#7a8590;--good:#1a7f37;--bad:#d02830;--grid:#ebe7da}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--surface:#0b1c2c;--card:#122638;--line:#223a4e;--text:#eef1f3;--text2:#b6c3cf;--muted:#7e8c99;
+--cream:#122638;--s1:#5aa8d8;--s2:#9aa8b4;--good:#4fc26b;--bad:#f06b6b;--grid:#1c3245}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--text);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 48px}
+.brand{background:var(--cream);border-bottom:1px solid var(--line);margin:0 -20px 22px;padding:26px 20px 18px;text-align:center}
+.brand img{height:88px;width:auto;display:block;margin:0 auto}
+.brand img.dark{display:none}
+@media (prefers-color-scheme:dark){.brand img.light{display:none}.brand img.dark{display:block}}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin-bottom:18px}
+h1{font:600 26px/1.1 Fraunces,Georgia,serif;margin:0;color:var(--text);letter-spacing:-.01em}
+.sub{color:var(--text2);font-size:13px}
+h2{font:600 15px/1.2 Fraunces,Georgia,serif;margin:30px 0 10px;color:var(--text);letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+h2::before{content:"";display:inline-block;width:18px;height:3px;background:var(--red);border-radius:2px}
+h3{font-family:Fraunces,Georgia,serif}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;border-top:3px solid var(--navy)}
+.tile .k{color:var(--text2);font-size:12px;margin-bottom:6px}
+.tile .v{font:600 28px/1.1 Fraunces,Georgia,serif;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--navy)}
+@media (prefers-color-scheme:dark){.tile .v{color:#8fc7ea}.tile{border-top-color:#5aa8d8}}
+.tile .c{font-size:12px;color:var(--text2);margin-top:6px;font-variant-numeric:tabular-nums}
+.delta{font-weight:600;font-variant-numeric:tabular-nums}
+.up{color:var(--good)}.down{color:var(--bad)}.flat{color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;position:relative}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .08s}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--text2);font-weight:600;position:sticky;top:0;background:var(--card)}
+th:first-child,td:first-child{text-align:left}
+td.name{font-weight:600}
+tr.total td{font-weight:700;border-top:2px solid var(--navy)}
+.flag{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-left:6px;vertical-align:middle}
+.note{color:var(--text2);font-size:13px}
+.note li{margin:4px 0}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--text2);margin-bottom:8px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.muted{color:var(--muted)}
+.scroll{overflow-x:auto}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 18px}
+.tabs button{font:inherit;font-size:14px;font-weight:600;padding:10px 16px;border:0;background:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--text);border-bottom-color:var(--red)}
+.pxf,.pxs{font:inherit;font-size:12px;padding:4px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text2);cursor:pointer}.pxf.on,.pxs.on{background:var(--text);color:var(--surface)}
+.tab{display:none}.tab.on{display:block}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.filters select,.filters input{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
+.filters label{font-size:12px;color:var(--text2)}
+.chip{font:inherit;font-size:12px;padding:4px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text2);cursor:pointer}
+.chip.on{background:var(--text);color:var(--surface)}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--surface)}
+tr.sub td{font-size:12px;color:var(--text2);background:var(--surface)}
+td.l{text-align:left}
+td.sn{max-width:230px;overflow:hidden;text-overflow:ellipsis;font-weight:600}td.sn small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+#bsup th,#bsup td,#bshop th,#bshop td{padding:6px 8px}
+#rcost th,#rcost td,#rstaff th,#rstaff td,#rmoves th,#rmoves td{padding:6px 6px;font-size:12.5px}
+@media (max-width:720px){.tile .v{font-size:22px}th,td{padding:6px 6px;font-size:12px}.brand img{height:64px}}
+@media (max-width:720px){.tiles{grid-template-columns:repeat(2,1fr);gap:8px}.tile{padding:10px 12px}.tile .v{font-size:20px}.tile .c{font-size:11px}.tabs{overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}.tabs button{padding:8px 10px;font-size:13px}#recPer .chip{padding:6px 10px}#recStatus{margin-left:0;width:100%}#recTbl th,#recTbl td{padding:5px 5px;font-size:11.5px;white-space:nowrap}.brand{padding:14px 12px 10px}.brand img{height:52px}h1{font-size:22px}header .sub{display:none}}
+</style>
+<style>#gate{position:fixed;inset:0;background:var(--surface);display:flex;align-items:center;justify-content:center;z-index:99}#gate form{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 24px;width:min(320px,90vw);text-align:center}#gate input{font:inherit;font-size:24px;letter-spacing:.3em;text-align:center;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);margin:14px 0}#gate button{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radius:8px;background:var(--navy);color:#fff;width:100%}#gate .err{color:var(--red);font-size:13px;min-height:18px}</style>
+</head>
+<body>
+<div id="gate"><form id="gateForm"><img src="icon.png" alt="" style="height:56px;margin-bottom:6px"><div style="font-weight:600">Dashboard Scopa</div><input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="code"><div class="err" id="gateErr"></div><button type="submit">Ouvrir</button></form></div>
+<div class="wrap" id="app" style="display:none">
+<div class="brand"><img class="light" src="logo_color.png" alt="Scopa Focacceria"><img class="dark" src="logo_white.png" alt="Scopa Focacceria"></div>
+<header><h1>Recettes</h1><span class="sub" id="sub"></span></header>
+<div class="legend" id="recPer" style="gap:8px;margin:0 0 6px;align-items:center;flex-wrap:wrap">
+  <button class="chip on" data-p="today">Aujourd'hui</button><button class="chip" data-p="yday">Hier</button><button class="chip" data-p="week">Semaine</button><button class="chip" data-p="month">Mois</button><button class="chip" data-p="year">Année</button>
+  <span class="muted" id="recStatus" style="margin-left:auto;font-size:12px"></span>
+</div>
+<div class="tiles" id="recTiles"></div>
+<h2>Par shop <span id="recTitle" class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
+<div class="card scroll"><table id="recTbl"></table></div>
+<p class="note" id="recNote"></p>
+<span id="liveDot" style="display:none"></span>
+</div>
+<script>
+const eur = v => v==null ? '—' : v.toLocaleString('fr-BE',{maximumFractionDigits:0})+' €';
+const eur2 = v => v==null ? '—' : v.toLocaleString('fr-BE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const num = v => v==null ? '—' : v.toLocaleString('fr-BE');
+const pct = (a,b) => (a==null||!b) ? null : (a-b)/b*100;
+const dlt = p => p==null ? '<span class="flat">—</span>' : `<span class="delta ${p>0.5?'up':p<-0.5?'down':'flat'}">${p>0?'+':''}${p.toFixed(1).replace('.',',')} %</span>`;
+
+const PIN_HASH='d398b29d3dbbb9bf201d4c7e1c19ff9d43c15fd45a0cec46fbe9885ec3f6e97f';
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function start(){
+  document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='';
+  try{ const r=await fetch('data/history.json?t='+Math.floor(Date.now()/3600000),{cache:'no-store'}); window.__HIST=await r.json(); }catch(e){ window.__HIST=null; }
+  if(window.__HIST) window.__HIST.today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Brussels'});
+  document.getElementById('sub').textContent='Source Restomax · historique rebâti chaque matin';
+  // ===== Recettes (onglet live) =====
+(function(){
+  const R=window.__HIST; if(!R){ document.getElementById('recTiles').innerHTML='<p class="note">Historique indisponible.</p>'; return; }
+  const FI=Object.fromEntries(R.fields.map((f,i)=>[f,i])); const Z=()=>R.fields.map(()=>0);
+  const iso=d=>d.toISOString().slice(0,10); const D=s=>new Date(s+'T12:00:00');
+  const today=D(R.today); let LIVE=null; let per='today';
+  const fr=d=>d.toLocaleDateString('fr-BE',{weekday:'short',day:'2-digit',month:'2-digit'});
+  function range(p,base){ // [from,to] inclus, en ISO
+    const b=base||today; const t=iso(b);
+    if(p==='today') return [t,t];
+    if(p==='yday'){const y=new Date(b); y.setDate(y.getDate()-1); return [iso(y),iso(y)];}
+    if(p==='week'){const m=new Date(b); m.setDate(m.getDate()-((m.getDay()+6)%7)); return [iso(m),t];}
+    if(p==='month') return [t.slice(0,8)+'01',t];
+    return [t.slice(0,4)+'-01-01',t];
+  }
+  function prevRange(p){ // même période écoulée, période précédente
+    const [a,b]=range(p); const A=D(a),B=D(b);
+    if(p==='today'||p==='yday'){const x=new Date(A); x.setDate(x.getDate()-7); return [iso(x),iso(x)];}
+    if(p==='week'){const x=new Date(A),y=new Date(B); x.setDate(x.getDate()-7); y.setDate(y.getDate()-7); return [iso(x),iso(y)];}
+    if(p==='month'){const x=new Date(A); x.setMonth(x.getMonth()-1); const y=new Date(B); y.setMonth(y.getMonth()-1); return [iso(x),iso(y)];}
+    return null;
+  }
+  function sumStore(sid,a,b){ // somme des jours [a,b] pour un shop : jours détaillés + mois complets + live
+    const v=Z(); const days=R.days[sid]||{}; const months=R.months[sid]||{};
+    if(a<=R.today&&R.today<=b&&LIVE){const s=LIVE.stores.find(x=>String(x.store_id)===String(sid)); if(s) R.fields.forEach((f,i)=>v[i]+=+s[f]||0);}
+    const lim=Object.keys(days).sort()[0]||'9999';
+    if(a>=lim){ for(const d in days) if(d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x); }
+    else { // année : mois complets avant la fenêtre détaillée + jours détaillés
+      for(const m in months){ const mStart=m+'-01', mEnd=m+'-31'; if(mEnd<lim.slice(0,7)+'-01'&&mStart>=a&&mEnd<=b+'z') months[m].forEach((x,i)=>v[i]+=x); }
+      for(const d in days) if(d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x);
+    }
+    return v;
+  }
+  const P=(n,t)=>t?Math.round(100*n/t)+' %':'—';
+  function render(){
+    const [a,b]=range(per); const pr=prevRange(per);
+    const rows=R.stores.map(s=>({name:s.name,id:s.id,v:sumStore(s.id,a,b),pv:pr?sumStore(s.id,pr[0],pr[1]):null})).filter(r=>r.v[FI.tickets]>0||per==='today');
+    const tot=Z(); rows.forEach(r=>r.v.forEach((x,i)=>tot[i]+=x)); const ptot=pr?Z():null; if(pr) rows.forEach(r=>r.pv.forEach((x,i)=>ptot[i]+=x));
+    const n=tot[FI.tickets], ttc=tot[FI.ttc], ht=tot[FI.ht];
+    const lbl={today:'Aujourd’hui · '+fr(today),yday:'Hier · '+fr(D(a)),week:'Semaine · '+D(a).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'})+' → '+D(b).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'}),month:'Mois · '+D(a).toLocaleDateString('fr-BE',{month:'long',year:'numeric'}),year:'Année '+a.slice(0,4)}[per];
+    const cmp=(k)=>ptot?dlt(pct(tot[FI[k]],ptot[FI[k]]))+' <span class="muted">vs '+(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':'mois préc. à date')+'</span>':'';
+    document.getElementById('recTiles').innerHTML=[
+      {k:'CA TTC',v:eur(ttc),c:cmp('ttc')},
+      {k:'CA HTVA',v:eur(ht),c:cmp('ht')},
+      {k:'Tickets',v:num(n),c:(n?'panier moyen '+eur2(ttc/n)+' · ':'')+cmp('tickets')},
+      {k:'Sur place',v:P(tot[FI.eatin_n],n),c:num(tot[FI.eatin_n])+' tickets · '+eur(tot[FI.eatin_ttc])},
+      {k:'À emporter',v:P(tot[FI.takeaway_n],n),c:num(tot[FI.takeaway_n])+' tickets · '+eur(tot[FI.takeaway_ttc])+' · dont borne '+num(tot[FI.kiosk_n])},
+      {k:'Livraison (plateformes)',v:P(tot[FI.delivery_n],n),c:`Uber ${num(tot[FI.uber_n])} · Deliveroo ${num(tot[FI.deliveroo_n])} · Takeaway ${num(tot[FI.takeawaycom_n])} · ${eur(tot[FI.delivery_ttc])}`},
+    ].map(t=>`<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="c">${t.c}</div></div>`).join('');
+    document.getElementById('recTitle').textContent='· '+lbl;
+    rows.sort((x,y)=>y.v[FI.ttc]-x.v[FI.ttc]);
+    const cell=(r,k)=>r.v[FI[k]];
+    document.getElementById('recTbl').innerHTML=`<tr><th style="text-align:left">Shop</th><th>CA TTC</th><th>CA HTVA</th>${pr?'<th>vs préc.</th>':''}<th>Tickets</th><th>Panier</th><th>Sur place</th><th>À emporter</th><th>Livraison</th><th>Uber</th><th>Deliveroo</th><th>Takeaway</th></tr>`
+      + rows.map(r=>{const t=cell(r,'tickets'); return `<tr><td class="name" style="text-align:left">${r.name}</td><td><b>${eur(cell(r,'ttc'))}</b></td><td>${eur(cell(r,'ht'))}</td>${pr?`<td>${dlt(pct(cell(r,'ttc'),r.pv[FI.ttc]))}</td>`:''}<td>${num(t)}</td><td>${t?eur2(cell(r,'ttc')/t):'—'}</td><td>${num(cell(r,'eatin_n'))} <span class="muted">${P(cell(r,'eatin_n'),t)}</span></td><td>${num(cell(r,'takeaway_n'))} <span class="muted">${P(cell(r,'takeaway_n'),t)}</span></td><td>${num(cell(r,'delivery_n'))} <span class="muted">${P(cell(r,'delivery_n'),t)}</span></td><td>${num(cell(r,'uber_n'))}</td><td>${num(cell(r,'deliveroo_n'))}</td><td>${num(cell(r,'takeawaycom_n'))}</td></tr>`;}).join('')
+      + `<tr style="font-weight:700;border-top:2px solid var(--line)"><td style="text-align:left">Réseau</td><td>${eur(ttc)}</td><td>${eur(ht)}</td>${pr?`<td>${dlt(pct(ttc,ptot[FI.ttc]))}</td>`:''}<td>${num(n)}</td><td>${n?eur2(ttc/n):'—'}</td><td>${num(tot[FI.eatin_n])}</td><td>${num(tot[FI.takeaway_n])}</td><td>${num(tot[FI.delivery_n])}</td><td>${num(tot[FI.uber_n])}</td><td>${num(tot[FI.deliveroo_n])}</td><td>${num(tot[FI.takeawaycom_n])}</td></tr>`;
+    document.getElementById('recNote').innerHTML=`Tickets de vente normaux Restomax (hors remboursements et tickets annulés), canal = type de consommation du ticket ; plateformes = origine de la commande (Uber Eats, Deliveroo, Takeaway.com). Historique jusqu'au ${R.last.slice(8)}/${R.last.slice(5,7)} rebâti chaque matin à 7h41 ; la journée en cours est rafraîchie toutes les 15 minutes de 9h à 23h.`+(()=>{const y=R.today.slice(0,4); const miss=[]; for(let m=1;m<=+R.today.slice(5,7);m++){const ym=y+'-'+String(m).padStart(2,'0'); const dim=new Date(+y,m,0).getDate(); const have=R.coverage[ym]||0; const need=ym===R.today.slice(0,7)?+R.today.slice(8)-1:dim; if(have<need) miss.push(new Date(ym+'-01T12:00').toLocaleDateString('fr-BE',{month:'short'})+(have?` (${have}/${need} j)`:''));} return miss.length?` <b>Historique par canal incomplet</b> (chargement progressif, quota API Restomax) : ${miss.join(', ')} — la vue Année est partielle.`:'';})();
+  }
+  document.querySelectorAll('#recPer .chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('#recPer .chip').forEach(x=>x.classList.remove('on')); b.classList.add('on'); per=b.dataset.p; render();});
+  function status(txt,ok){document.getElementById('recStatus').textContent=txt; document.getElementById('liveDot').style.background=ok?'#1f7850':'#aaa';}
+  status('journée en cours : chargement…',false); render();
+  // Journée en cours : data/live.json (réécrit toutes les 15 min)
+  async function poll(){
+    try{ const r=await fetch('data/live.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status); const d=await r.json();
+      LIVE=d; const u=new Date(d.updated); const age=Math.round((Date.now()-u)/60000);
+      status(`journée du ${d.date.slice(8)}/${d.date.slice(5,7)} mise à jour à ${u.toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}${age>25?' · ⚠ plus de '+age+' min':''}`, age<=25); render();
+    }catch(e){status('journée en cours indisponible ('+e.message+')',false);}
+  }
+  poll(); setInterval(poll,120000); document.addEventListener('visibilitychange',()=>{if(!document.hidden) poll();});
+})();
+
+}
+document.getElementById('gateForm').onsubmit=async e=>{e.preventDefault(); const h=await sha(document.getElementById('pin').value.trim()); if(h===PIN_HASH){try{localStorage.setItem('scopa_pin',h);}catch(_){} start();} else document.getElementById('gateErr').textContent='Code incorrect';};
+(function(){let h=null; try{h=localStorage.getItem('scopa_pin');}catch(_){} if(h===PIN_HASH) start(); else document.getElementById('pin').focus();})();
+</script>
+</body></html>
