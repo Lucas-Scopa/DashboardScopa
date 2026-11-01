@@ -73,7 +73,7 @@ td.sn{max-width:230px;overflow:hidden;text-overflow:ellipsis;font-weight:600}td.
 <style>#gate{position:fixed;inset:0;background:var(--surface);display:flex;align-items:center;justify-content:center;z-index:99}#gate form{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 24px;width:min(320px,90vw);text-align:center}#gate input{font:inherit;font-size:24px;letter-spacing:.3em;text-align:center;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);margin:14px 0}#gate button{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radius:8px;background:var(--navy);color:#fff;width:100%}#gate .err{color:var(--red);font-size:13px;min-height:18px}</style>
 </head>
 <body>
-<div id="gate"><form id="gateForm"><img src="icon.png" alt="" style="height:56px;margin-bottom:6px"><div style="font-weight:600">Dashboard Scopa</div><input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="code"><div class="err" id="gateErr"></div><button type="submit">Ouvrir</button></form></div>
+<div id="gate"><form id="gateForm"><img src="icon.png" alt="" style="height:56px;margin-bottom:6px"><div style="font-weight:600">Dashboard Scopa</div><input id="pin" type="password" autocomplete="current-password" placeholder="code"><div class="err" id="gateErr"></div><button type="submit">Ouvrir</button></form></div>
 <div class="wrap" id="app" style="display:none">
 <div class="brand"><img class="light" src="logo_color.png" alt="Scopa Focacceria"><img class="dark" src="logo_white.png" alt="Scopa Focacceria"></div>
 <header><h1>Dashboard</h1><span class="sub" id="sub"></span></header>
@@ -98,7 +98,7 @@ const PIN_HASH='6c8b7c96491654021accb7c2e7a773323dcb2b5a86e82cb1bdc98e6d6e6e92b7
 async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function start(){
   document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='';
-  try{ const r=await fetch('data/history.json?t='+Math.floor(Date.now()/3600000),{cache:'no-store'}); window.__HIST=await r.json(); }catch(e){ window.__HIST=null; }
+  try{ const r=await fetch('data/history.json?t='+Math.floor(Date.now()/600000),{cache:'no-store'}); window.__HIST=await r.json(); }catch(e){ window.__HIST=null; }
   if(window.__HIST) window.__HIST.today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Brussels'});
   document.getElementById('sub').textContent='Source Restomax · historique rebâti chaque matin';
   // ===== Recettes (onglet live) =====
@@ -125,7 +125,7 @@ async function start(){
   }
   function sumStore(sid,a,b){ // somme des jours [a,b] pour un shop : jours détaillés + mois complets + live
     const v=Z(); const days=R.days[sid]||{}; const months=R.months[sid]||{};
-    if(a<=R.today&&R.today<=b&&LIVE){const s=LIVE.stores.find(x=>String(x.store_id)===String(sid)); if(s) R.fields.forEach((f,i)=>v[i]+=+s[f]||0);}
+    if(a<=R.today&&R.today<=b&&LIVE){const s=LIVE.stores.find(x=>String(x.store_id)===String(sid)); if(s) R.fields.forEach((f,i)=>v[i]+=f==='ch_n'?(+s.tickets||0):(+s[f]||0));}
     const lim=Object.keys(days).sort()[0]||'9999';
     if(a>=lim){ for(const d in days) if(d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x); }
     else { // année : mois complets avant la fenêtre détaillée + jours détaillés
@@ -139,24 +139,24 @@ async function start(){
     const [a,b]=range(per); const pr=prevRange(per);
     const rows=R.stores.map(s=>({name:s.name,id:s.id,v:sumStore(s.id,a,b),pv:pr?sumStore(s.id,pr[0],pr[1]):null})).filter(r=>r.v[FI.tickets]>0||per==='today');
     const tot=Z(); rows.forEach(r=>r.v.forEach((x,i)=>tot[i]+=x)); const ptot=pr?Z():null; if(pr) rows.forEach(r=>r.pv.forEach((x,i)=>ptot[i]+=x));
-    const n=tot[FI.tickets], ttc=tot[FI.ttc], ht=tot[FI.ht];
+    const n=tot[FI.tickets], ttc=tot[FI.ttc], ht=tot[FI.ht], cn=tot[FI.ch_n];
     const lbl={today:'Aujourd’hui · '+fr(today),yday:'Hier · '+fr(D(a)),week:'Semaine · '+D(a).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'})+' → '+D(b).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'}),month:'Mois · '+D(a).toLocaleDateString('fr-BE',{month:'long',year:'numeric'}),year:'Année '+a.slice(0,4)}[per];
     const cmp=(k)=>ptot?dlt(pct(tot[FI[k]],ptot[FI[k]]))+' <span class="muted">vs '+(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':'mois préc. à date')+'</span>':'';
     document.getElementById('recTiles').innerHTML=[
       {k:'CA TTC',v:eur(ttc),c:cmp('ttc')},
       {k:'CA HTVA',v:eur(ht),c:cmp('ht')},
       {k:'Tickets',v:num(n),c:(n?'panier moyen '+eur2(ttc/n)+' · ':'')+cmp('tickets')},
-      {k:'Sur place',v:P(tot[FI.eatin_n],n),c:num(tot[FI.eatin_n])+' tickets · '+eur(tot[FI.eatin_ttc])},
-      {k:'À emporter',v:P(tot[FI.takeaway_n],n),c:num(tot[FI.takeaway_n])+' tickets · '+eur(tot[FI.takeaway_ttc])+' · dont borne '+num(tot[FI.kiosk_n])},
-      {k:'Livraison (plateformes)',v:P(tot[FI.delivery_n],n),c:`Uber ${num(tot[FI.uber_n])} · Deliveroo ${num(tot[FI.deliveroo_n])} · Takeaway ${num(tot[FI.takeawaycom_n])} · ${eur(tot[FI.delivery_ttc])}`},
+      {k:'Sur place',v:P(tot[FI.eatin_n],cn),c:num(tot[FI.eatin_n])+' tickets · '+eur(tot[FI.eatin_ttc])},
+      {k:'À emporter',v:P(tot[FI.takeaway_n],cn),c:num(tot[FI.takeaway_n])+' tickets · '+eur(tot[FI.takeaway_ttc])+' · dont borne '+num(tot[FI.kiosk_n])},
+      {k:'Livraison (plateformes)',v:P(tot[FI.delivery_n],cn),c:`Uber ${num(tot[FI.uber_n])} · Deliveroo ${num(tot[FI.deliveroo_n])} · Takeaway ${num(tot[FI.takeawaycom_n])} · ${eur(tot[FI.delivery_ttc])}`},
     ].map(t=>`<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="c">${t.c}</div></div>`).join('');
     document.getElementById('recTitle').textContent='· '+lbl;
     rows.sort((x,y)=>y.v[FI.ttc]-x.v[FI.ttc]);
     const cell=(r,k)=>r.v[FI[k]];
     document.getElementById('recTbl').innerHTML=`<tr><th style="text-align:left">Shop</th><th>CA TTC</th><th>CA HTVA</th>${pr?'<th>vs préc.</th>':''}<th>Tickets</th><th>Panier</th><th>Sur place</th><th>À emporter</th><th>Livraison</th><th>Uber</th><th>Deliveroo</th><th>Takeaway</th></tr>`
-      + rows.map(r=>{const t=cell(r,'tickets'); return `<tr><td class="name" style="text-align:left">${r.name}</td><td><b>${eur(cell(r,'ttc'))}</b></td><td>${eur(cell(r,'ht'))}</td>${pr?`<td>${dlt(pct(cell(r,'ttc'),r.pv[FI.ttc]))}</td>`:''}<td>${num(t)}</td><td>${t?eur2(cell(r,'ttc')/t):'—'}</td><td>${num(cell(r,'eatin_n'))} <span class="muted">${P(cell(r,'eatin_n'),t)}</span></td><td>${num(cell(r,'takeaway_n'))} <span class="muted">${P(cell(r,'takeaway_n'),t)}</span></td><td>${num(cell(r,'delivery_n'))} <span class="muted">${P(cell(r,'delivery_n'),t)}</span></td><td>${num(cell(r,'uber_n'))}</td><td>${num(cell(r,'deliveroo_n'))}</td><td>${num(cell(r,'takeawaycom_n'))}</td></tr>`;}).join('')
+      + rows.map(r=>{const t=cell(r,'ch_n'); return `<tr><td class="name" style="text-align:left">${r.name}</td><td><b>${eur(cell(r,'ttc'))}</b></td><td>${eur(cell(r,'ht'))}</td>${pr?`<td>${dlt(pct(cell(r,'ttc'),r.pv[FI.ttc]))}</td>`:''}<td>${num(cell(r,'tickets'))}</td><td>${cell(r,'tickets')?eur2(cell(r,'ttc')/cell(r,'tickets')):'—'}</td><td>${num(cell(r,'eatin_n'))} <span class="muted">${P(cell(r,'eatin_n'),t)}</span></td><td>${num(cell(r,'takeaway_n'))} <span class="muted">${P(cell(r,'takeaway_n'),t)}</span></td><td>${num(cell(r,'delivery_n'))} <span class="muted">${P(cell(r,'delivery_n'),t)}</span></td><td>${num(cell(r,'uber_n'))}</td><td>${num(cell(r,'deliveroo_n'))}</td><td>${num(cell(r,'takeawaycom_n'))}</td></tr>`;}).join('')
       + `<tr style="font-weight:700;border-top:2px solid var(--line)"><td style="text-align:left">Réseau</td><td>${eur(ttc)}</td><td>${eur(ht)}</td>${pr?`<td>${dlt(pct(ttc,ptot[FI.ttc]))}</td>`:''}<td>${num(n)}</td><td>${n?eur2(ttc/n):'—'}</td><td>${num(tot[FI.eatin_n])}</td><td>${num(tot[FI.takeaway_n])}</td><td>${num(tot[FI.delivery_n])}</td><td>${num(tot[FI.uber_n])}</td><td>${num(tot[FI.deliveroo_n])}</td><td>${num(tot[FI.takeawaycom_n])}</td></tr>`;
-    document.getElementById('recNote').innerHTML=`Tickets de vente normaux Restomax (hors remboursements et tickets annulés), canal = type de consommation du ticket ; plateformes = origine de la commande (Uber Eats, Deliveroo, Takeaway.com). Historique jusqu'au ${R.last.slice(8)}/${R.last.slice(5,7)} rebâti chaque matin à 7h41 ; la journée en cours est rafraîchie toutes les 15 minutes de 9h à 23h.`+(()=>{const y=R.today.slice(0,4); const miss=[]; for(let m=1;m<=+R.today.slice(5,7);m++){const ym=y+'-'+String(m).padStart(2,'0'); const dim=new Date(+y,m,0).getDate(); const have=R.coverage[ym]||0; const need=ym===R.today.slice(0,7)?+R.today.slice(8)-1:dim; if(have<need) miss.push(new Date(ym+'-01T12:00').toLocaleDateString('fr-BE',{month:'short'})+(have?` (${have}/${need} j)`:''));} return miss.length?` <b>Historique par canal incomplet</b> (chargement progressif, quota API Restomax) : ${miss.join(', ')} — la vue Année est partielle.`:'';})();
+    document.getElementById('recNote').innerHTML=`Tickets de vente normaux Restomax (hors remboursements et tickets annulés), canal = type de consommation du ticket ; plateformes = origine de la commande (Uber Eats, Deliveroo, Takeaway.com). Historique jusqu'au ${R.last.slice(8)}/${R.last.slice(5,7)} rebâti chaque matin à 7h41 ; la journée en cours est rafraîchie toutes les 15 minutes de 9h à 23h.`+(()=>{const y=R.today.slice(0,4); const miss=[]; for(let m=1;m<=+R.today.slice(5,7);m++){const ym=y+'-'+String(m).padStart(2,'0'); const dim=new Date(+y,m,0).getDate(); const have=R.coverage[ym]||0; const need=ym===R.today.slice(0,7)?+R.today.slice(8)-1:dim; if(have<need) miss.push(new Date(ym+'-01T12:00').toLocaleDateString('fr-BE',{month:'short'})+(have?` (${have}/${need} j)`:''));} return miss.length?` <b>Historique par canal incomplet</b> (chargement progressif, quota API Restomax) : ${miss.join(', ')} — la vue Année est partielle.`:'';})()+(cn<n*0.98?` <b>Répartition par canal</b> connue sur ${Math.round(100*cn/n)} % des tickets de la période (le reste vient des clôtures de caisse, sans détail canal, en cours de chargement) : les % sur place / à emporter / livraison portent sur ces tickets.`:'');
   }
   document.querySelectorAll('#recPer .chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('#recPer .chip').forEach(x=>x.classList.remove('on')); b.classList.add('on'); per=b.dataset.p; render();});
   function status(txt,ok){document.getElementById('recStatus').textContent=txt; document.getElementById('liveDot').style.background=ok?'#1f7850':'#aaa';}
@@ -169,6 +169,7 @@ async function start(){
     }catch(e){status('journée en cours indisponible ('+e.message+')',false);}
   }
   poll(); setInterval(poll,120000); document.addEventListener('visibilitychange',()=>{if(!document.hidden) poll();});
+
 })();
 
 }
