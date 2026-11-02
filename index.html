@@ -106,7 +106,7 @@ async function start(){
   const R=window.__HIST; if(!R){ document.getElementById('recTiles').innerHTML='<p class="note">Historique indisponible.</p>'; return; }
   const FI=Object.fromEntries(R.fields.map((f,i)=>[f,i])); const Z=()=>R.fields.map(()=>0);
   const iso=d=>d.toISOString().slice(0,10); const D=s=>new Date(s+'T12:00:00');
-  const today=D(R.today); let LIVE=null; let per='today';
+  R.today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Brussels'}); const today=D(R.today); let LIVE=null; let per='today';
   const fr=d=>d.toLocaleDateString('fr-BE',{weekday:'short',day:'2-digit',month:'2-digit'});
   function range(p,base){ // [from,to] inclus, en ISO
     const b=base||today; const t=iso(b);
@@ -125,7 +125,7 @@ async function start(){
   }
   function sumStore(sid,a,b){ // somme des jours [a,b] pour un shop : jours détaillés + mois complets + live
     const v=Z(); const days=R.days[sid]||{}; const months=R.months[sid]||{};
-    if(a<=R.today&&R.today<=b&&LIVE){const s=LIVE.stores.find(x=>String(x.store_id)===String(sid)); if(s) R.fields.forEach((f,i)=>v[i]+=f==='ch_n'?(+s.tickets||0):(+s[f]||0));}
+    if(LIVE&&LIVE.date&&a<=LIVE.date&&LIVE.date<=b&&!(days[LIVE.date])){const s=LIVE.stores.find(x=>String(x.store_id)===String(sid)); if(s) R.fields.forEach((f,i)=>v[i]+=f==='ch_n'?(+s.tickets||0):(+s[f]||0));}
     const lim=Object.keys(days).sort()[0]||'9999';
     if(a>=lim){ for(const d in days) if(d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x); }
     else { // année : mois complets avant la fenêtre détaillée + jours détaillés
@@ -164,8 +164,8 @@ async function start(){
   // Journée en cours : data/live.json (réécrit toutes les 15 min)
   async function poll(){
     try{ const r=await fetch('data/live.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status); const d=await r.json();
-      LIVE=d; const u=new Date(d.updated); const age=Math.round((Date.now()-u)/60000);
-      status(`journée du ${d.date.slice(8)}/${d.date.slice(5,7)} mise à jour à ${u.toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}${age>25?' · ⚠ plus de '+age+' min':''}`, age<=25); render();
+      LIVE=d; const u=new Date(d.updated); const age=Math.round((Date.now()-u)/60000); const isToday=d.date===R.today;
+      status(isToday?`aujourd'hui mis à jour à ${u.toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}${age>25?' · ⚠ plus de '+age+' min':''}`:`aucune vente encore remontée aujourd'hui (dernière mise à jour : ${d.date.slice(8)}/${d.date.slice(5,7)} ${u.toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}) · rafraîchi toutes les 15 min de 9h à 23h`, isToday&&age<=25); render();
     }catch(e){status('journée en cours indisponible ('+e.message+')',false);}
   }
   poll(); setInterval(poll,120000); document.addEventListener('visibilitychange',()=>{if(!document.hidden) poll();});
