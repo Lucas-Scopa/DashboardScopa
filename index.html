@@ -79,7 +79,7 @@ td.sn{max-width:230px;overflow:hidden;text-overflow:ellipsis;font-weight:600}td.
 <header><h1>Dashboard</h1><span class="sub" id="sub"></span></header>
 <div class="legend" id="recPer" style="gap:8px;margin:0 0 6px;align-items:center;flex-wrap:wrap">
   <button class="chip on" data-p="today">Aujourd'hui</button><button class="chip" data-p="yday">Hier</button><button class="chip" data-p="week">Semaine</button><button class="chip" data-p="month">Mois</button><button class="chip" data-p="year">Année</button>
-  <span class="muted" id="recStatus" style="margin-left:auto;font-size:12px"></span><button class="chip" id="recRefresh" type="button" style="margin-left:8px" onclick="this.textContent='↻ …';location.replace(location.pathname+'?r='+Date.now()+location.hash)">↻ Actualiser</button>
+  <span class="muted" id="recStatus" style="margin-left:auto;font-size:12px"></span><button class="chip" id="recRefresh" type="button" style="margin-left:8px">↻ Actualiser</button>
 </div>
 <style>@media (min-width:721px){#recTiles{grid-template-columns:repeat(4,1fr)}}</style><div class="tiles" id="recTiles"></div>
 <h2>Par shop <span id="recTitle" class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
@@ -106,7 +106,7 @@ async function start(){
   const R=window.__HIST; if(!R){ document.getElementById('recTiles').innerHTML='<p class="note">Historique indisponible.</p>'; return; }
   const FI=Object.fromEntries(R.fields.map((f,i)=>[f,i])); const Z=()=>R.fields.map(()=>0);
   const iso=d=>d.toISOString().slice(0,10); const D=s=>new Date(s+'T12:00:00');
-  R.today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Brussels'}); const today=D(R.today); let LIVE=null; let per='today';
+  R.today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Brussels'}); const today=D(R.today); let LIVE=null; let per=(['today','yday','week','month','year'].includes(new URLSearchParams(location.search).get('p'))?new URLSearchParams(location.search).get('p'):'today');
   const fr=d=>d.toLocaleDateString('fr-BE',{weekday:'short',day:'2-digit',month:'2-digit'});
   function range(p,base){ // [from,to] inclus, en ISO
     const b=base||today; const t=iso(b);
@@ -173,7 +173,10 @@ async function start(){
       + (()=>{const F=rows.filter(r=>FRANCH.has(+r.id)); if(!F.length) return ''; const s=k=>F.reduce((a,r)=>a+r.v[FI[k]],0); const st=ttc-s('ttc'), sh=ht-s('ht'), sn=n-s('tickets'); return `<tr class="muted"><td style="text-align:left">dont shops en propre</td><td>${eur(st)}</td><td>${eur(sh)}</td>${pr?'<td></td>':''}<td>${num(sn)}</td><td>${sn?eur2(st/sn):'—'}</td><td>${BF(tot[FI.drink_ttc]-s('drink_ttc'),tot[FI.food_ttc]-s('food_ttc'))}</td><td colspan="6"></td></tr><tr style="color:#2e9e57"><td style="text-align:left">dont franchisés</td><td>${eur(s('ttc'))}</td><td>${eur(s('ht'))}</td>${pr?'<td></td>':''}<td>${num(s('tickets'))}</td><td>${s('tickets')?eur2(s('ttc')/s('tickets')):'—'}</td><td>${BF(s('drink_ttc'),s('food_ttc'))}</td><td colspan="6"></td></tr>`;})();
     document.getElementById('recNote').innerHTML=`Tickets de vente normaux Restomax (hors remboursements et tickets annulés), canal = type de consommation du ticket ; plateformes = origine de la commande (Uber Eats, Deliveroo, Takeaway.com). Historique jusqu'au ${R.last.slice(8)}/${R.last.slice(5,7)} rebâti chaque matin à 7h41 ; la journée en cours est rafraîchie toutes les 15 minutes de 9h à 23h.`+(()=>{const y=R.today.slice(0,4); const miss=[]; for(let m=1;m<=+R.today.slice(5,7);m++){const ym=y+'-'+String(m).padStart(2,'0'); const dim=new Date(+y,m,0).getDate(); const have=R.coverage[ym]||0; const need=ym===R.today.slice(0,7)?+R.today.slice(8)-1:dim; if(have<need) miss.push(new Date(ym+'-01T12:00').toLocaleDateString('fr-BE',{month:'short'})+(have?` (${have}/${need} j)`:''));} return miss.length?` <b>Historique par canal incomplet</b> (chargement progressif, quota API Restomax) : ${miss.join(', ')} — la vue Année est partielle.`:'';})()+(cn<n*0.98?` <b>Répartition par canal</b> connue sur ${Math.round(100*cn/n)} % des tickets de la période (le reste vient des clôtures de caisse, sans détail canal, en cours de chargement) : les % sur place / à emporter / livraison portent sur ces tickets.`:'');
   }
-  document.querySelectorAll('#recPer .chip').forEach(b=>b.onclick=()=>{document.querySelectorAll('#recPer .chip').forEach(x=>x.classList.remove('on')); b.classList.add('on'); per=b.dataset.p; render();});
+  document.querySelectorAll('#recPer .chip[data-p]').forEach(b=>{ b.classList.toggle('on',b.dataset.p===per); b.onclick=()=>{document.querySelectorAll('#recPer .chip[data-p]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); per=b.dataset.p; render();}; });
+  // bouton Actualiser : recharge toute l'app (dernière version + données) en gardant la période affichée
+  const reloadKeep=()=>location.replace(location.pathname+'?r='+Date.now()+'&p='+per+location.hash);
+  document.getElementById('recRefresh').onclick=function(){ this.textContent='↻ …'; reloadKeep(); };
   function status(txt,ok){document.getElementById('recStatus').textContent=txt; document.getElementById('liveDot').style.background=ok?'#1f7850':'#aaa';}
   status('journée en cours : chargement…',false); render();
   // Journée en cours : data/live.json (réécrit toutes les 15 min)
@@ -185,7 +188,7 @@ async function start(){
   }
   poll(); setInterval(poll,120000);
   // iPhone (app sur l'écran d'accueil) : au retour dans l'app, relire les chiffres ; après plus de 10 min d'absence, recharger toute la page (historique du jour compris)
-  let hiddenAt=0; const back=()=>{ if(hiddenAt&&Date.now()-hiddenAt>600000){ location.replace(location.pathname+'?r='+Date.now()+location.hash); return; } hiddenAt=0; poll(); };
+  let hiddenAt=0; const back=()=>{ if(hiddenAt&&Date.now()-hiddenAt>600000){ reloadKeep(); return; } hiddenAt=0; poll(); };
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) hiddenAt=Date.now(); else back(); });
   window.addEventListener('pageshow',e=>{ if(e.persisted) back(); }); window.addEventListener('focus',()=>poll());
 
