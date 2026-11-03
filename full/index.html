@@ -568,9 +568,11 @@ document.getElementById('notes').innerHTML = [
     if(LIVE&&LIVE.date&&a<=LIVE.date&&LIVE.date<=b&&!(days[LIVE.date])){const s=LIVE.stores.find(x=>String(x.store_id)===String(sid)); if(s) R.fields.forEach((f,i)=>v[i]+=f==='ch_n'?(+s.tickets||0):(+s[f]||0));}
     const lim=Object.keys(days).sort()[0]||'9999';
     if(a>=lim){ for(const d in days) if(d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x); }
-    else { // année : mois complets avant la fenêtre détaillée + jours détaillés
-      for(const m in months){ const mStart=m+'-01', mEnd=m+'-31'; if(mEnd<lim.slice(0,7)+'-01'&&mStart>=a&&mEnd<=b+'z') months[m].forEach((x,i)=>v[i]+=x); }
-      for(const d in days) if(d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x);
+    else { // période qui commence avant la fenêtre détaillée (année) : mois complets jusqu'au mois de `lim` exclu, puis
+      // pour le mois de `lim` et les suivants, le total du mois (détail jour inutile), sauf le mois de `b` qui peut être en cours → jours détaillés
+      const mb=b.slice(0,7);
+      for(const m in months){ if(m+'-01'<a||m>mb) continue; if(m<mb) months[m].forEach((x,i)=>v[i]+=x); }
+      for(const d in days) if(d.slice(0,7)===mb&&d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x);
     }
     return v;
   }
