@@ -81,7 +81,7 @@ td.sn{max-width:230px;overflow:hidden;text-overflow:ellipsis;font-weight:600}td.
   <button class="chip on" data-p="today">Aujourd'hui</button><button class="chip" data-p="yday">Hier</button><button class="chip" data-p="week">Semaine</button><button class="chip" data-p="month">Mois</button><button class="chip" data-p="year">Année</button>
   <span class="muted" id="recStatus" style="margin-left:auto;font-size:12px"></span>
 </div>
-<div class="tiles" id="recTiles"></div>
+<style>@media (min-width:721px){#recTiles{grid-template-columns:repeat(4,1fr)}}</style><div class="tiles" id="recTiles"></div>
 <h2>Par shop <span id="recTitle" class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
 <div class="card scroll"><table id="recTbl"></table></div>
 <p class="note" id="recNote"></p>
@@ -144,14 +144,23 @@ async function start(){
     const n=tot[FI.tickets], ttc=tot[FI.ttc], ht=tot[FI.ht], cn=tot[FI.ch_n];
     const lbl={today:'Aujourd’hui · '+fr(today),yday:'Hier · '+fr(D(a)),week:'Semaine · '+D(a).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'})+' → '+D(b).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'}),month:'Mois · '+D(a).toLocaleDateString('fr-BE',{month:'long',year:'numeric'}),year:'Année '+a.slice(0,4)}[per];
     const cmp=(k)=>ptot?dlt(pct(tot[FI[k]],ptot[FI[k]]))+' <span class="muted">vs '+(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':'mois préc. à date')+'</span>':'';
+    // CA séparé : shops en propre (bleu) / franchisés (vert, Louvain-la-Neuve + Pl. du Luxembourg)
+    const FRT=new Set([12424,13305]); const own=Z(), frc=Z(), pown=pr?Z():null, pfr=pr?Z():null;
+    rows.forEach(r=>{ const f=FRT.has(+r.id); r.v.forEach((x,i)=>(f?frc:own)[i]+=x); if(pr) r.pv.forEach((x,i)=>(f?pfr:pown)[i]+=x); });
+    const vs=(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':'mois préc. à date');
+    const cmpX=(cur,prev,k)=>prev?dlt(pct(cur[FI[k]],prev[FI[k]]))+' <span class="muted">vs '+vs+'</span>':'';
+    const share=(k,c)=>(tot[FI[k]]?(c?' · ':'')+Math.round(frc[FI[k]]/tot[FI[k]]*100)+' % du réseau':'');
     document.getElementById('recTiles').innerHTML=[
-      {k:'CA TTC',v:eur(ttc),c:cmp('ttc')},
-      {k:'CA HTVA',v:eur(ht),c:cmp('ht')},
-      {k:'Tickets',v:num(n),c:(n?'panier moyen '+eur2(ttc/n)+' · ':'')+cmp('tickets')},
-      {k:'Sur place',v:P(tot[FI.eatin_n],cn),c:num(tot[FI.eatin_n])+' tickets · '+eur(tot[FI.eatin_ttc])},
-      {k:'À emporter',v:P(tot[FI.takeaway_n],cn),c:num(tot[FI.takeaway_n])+' tickets · '+eur(tot[FI.takeaway_ttc])+' · dont borne '+num(tot[FI.kiosk_n])},
-      {k:'Livraison (plateformes)',v:P(tot[FI.delivery_n],cn),c:`Uber ${num(tot[FI.uber_n])} · Deliveroo ${num(tot[FI.deliveroo_n])} · Takeaway ${num(tot[FI.takeawaycom_n])} · ${eur(tot[FI.delivery_ttc])}`},
-    ].map(t=>`<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="c">${t.c}</div></div>`).join('');
+      {k:'CA TTC shops en propre',v:eur(own[FI.ttc]),c:cmpX(own,pown,'ttc')},
+      {k:'CA TTC franchisés',v:eur(frc[FI.ttc]),c:cmpX(frc,pfr,'ttc')+share('ttc',pfr),g:1},
+      {k:'CA HTVA shops en propre',v:eur(own[FI.ht]),c:cmpX(own,pown,'ht')},
+      {k:'CA HTVA franchisés',v:eur(frc[FI.ht]),c:cmpX(frc,pfr,'ht')+share('ht',pfr),g:1},
+
+      {k:'Tickets shops en propre',v:num(own[FI.tickets]),c:(own[FI.tickets]?'panier moyen '+eur2(own[FI.ttc]/own[FI.tickets])+' · ':'')+cmpX(own,pown,'tickets')},
+      {k:'Sur place',v:P(own[FI.eatin_n],own[FI.ch_n]),c:num(own[FI.eatin_n])+' tickets · '+eur(own[FI.eatin_ttc])},
+      {k:'À emporter',v:P(own[FI.takeaway_n],own[FI.ch_n]),c:num(own[FI.takeaway_n])+' tickets · '+eur(own[FI.takeaway_ttc])+' · dont borne '+num(own[FI.kiosk_n])},
+      {k:'Livraison (plateformes)',v:P(own[FI.delivery_n],own[FI.ch_n]),c:`Uber ${num(own[FI.uber_n])} · Deliveroo ${num(own[FI.deliveroo_n])} · Takeaway ${num(own[FI.takeawaycom_n])} · ${eur(own[FI.delivery_ttc])}`},   // 2e ligne : shops en propre uniquement
+    ].map(t=>t.g?`<div class="tile" style="border-color:rgba(46,158,87,.45);border-top-color:#2e9e57;background:rgba(46,158,87,.08)"><div class="k" style="color:#2e9e57;font-weight:600">${t.k}</div><div class="v" style="color:#2e9e57">${t.v}</div><div class="c">${t.c}</div></div>`:`<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="c">${t.c}</div></div>`).join('');
     document.getElementById('recTitle').textContent='· '+lbl;
     rows.sort((x,y)=>y.v[FI.ttc]-x.v[FI.ttc]);
     const FRANCH=new Set([12424,13305]);   // franchisés : Louvain-la-Neuve (NSB SRL), Pl. du Luxembourg
