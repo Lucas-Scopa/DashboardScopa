@@ -1329,7 +1329,7 @@ function plHBar(el,rows,opt){ // rows [{name,parts:[v..],tip}] barres horizontal
   const n2=v=>v==null?'':(Math.round(v*1000)/1000).toString().replace('.',',');
   const SKIP=new Set(['Sans','Préparations','Exposition','Perte Pains']);
   // --- overrides (modifications faites dans la page) ---
-  let OV={ing:{},rec:{}}; const LS='scopa_fiches_ov'; let dbDoc=null;
+  let OV={"ing":{"16":{"price":10.68}},"rec":{"165":{"add":[[3,1,[0,1]]]}}}; const LS='scopa_fiches_ov'; let dbDoc=null;
   try{const s=localStorage.getItem(LS); if(s) OV=Object.assign({ing:{},rec:{}},JSON.parse(s));}catch(_){}
   const saveStatus=(t,ok)=>{const el=document.getElementById('fcSave'); el.textContent=t; el.style.color=ok===false?'var(--bad)':'var(--muted)';};
   async function persist(){ try{localStorage.setItem(LS,JSON.stringify(OV));}catch(_){}
