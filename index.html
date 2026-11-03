@@ -79,7 +79,7 @@ td.sn{max-width:230px;overflow:hidden;text-overflow:ellipsis;font-weight:600}td.
 <header><h1>Dashboard</h1><span class="sub" id="sub"></span></header>
 <div class="legend" id="recPer" style="gap:8px;margin:0 0 6px;align-items:center;flex-wrap:wrap">
   <button class="chip on" data-p="today">Aujourd'hui</button><button class="chip" data-p="yday">Hier</button><button class="chip" data-p="week">Semaine</button><button class="chip" data-p="month">Mois</button><button class="chip" data-p="year">Année</button>
-  <span class="muted" id="recStatus" style="margin-left:auto;font-size:12px"></span>
+  <span class="muted" id="recStatus" style="margin-left:auto;font-size:12px"></span><button class="chip" id="recRefresh" type="button" style="margin-left:8px" onclick="this.textContent='↻ …';location.replace(location.pathname+'?r='+Date.now()+location.hash)">↻ Actualiser</button>
 </div>
 <style>@media (min-width:721px){#recTiles{grid-template-columns:repeat(4,1fr)}}</style><div class="tiles" id="recTiles"></div>
 <h2>Par shop <span id="recTitle" class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
@@ -181,7 +181,11 @@ async function start(){
       status(isToday?`aujourd'hui mis à jour à ${u.toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}${age>25?' · ⚠ plus de '+age+' min':''}`:`aucune vente encore remontée aujourd'hui (dernière mise à jour : ${d.date.slice(8)}/${d.date.slice(5,7)} ${u.toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}) · rafraîchi toutes les 15 min de 9h à 23h`, isToday&&age<=25); render();
     }catch(e){status('journée en cours indisponible ('+e.message+')',false);}
   }
-  poll(); setInterval(poll,120000); document.addEventListener('visibilitychange',()=>{if(!document.hidden) poll();});
+  poll(); setInterval(poll,120000);
+  // iPhone (app sur l'écran d'accueil) : au retour dans l'app, relire les chiffres ; après plus de 10 min d'absence, recharger toute la page (historique du jour compris)
+  let hiddenAt=0; const back=()=>{ if(hiddenAt&&Date.now()-hiddenAt>600000){ location.replace(location.pathname+'?r='+Date.now()+location.hash); return; } hiddenAt=0; poll(); };
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) hiddenAt=Date.now(); else back(); });
+  window.addEventListener('pageshow',e=>{ if(e.persisted) back(); }); window.addEventListener('focus',()=>poll());
 
 })();
 
