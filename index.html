@@ -78,10 +78,10 @@ td.sn{max-width:230px;overflow:hidden;text-overflow:ellipsis;font-weight:600}td.
 <div class="brand"><img class="light" src="logo_color.png" alt="Scopa Focacceria"><img class="dark" src="logo_white.png" alt="Scopa Focacceria"></div>
 <header><h1>Dashboard</h1><span class="sub" id="sub"></span></header>
 <div class="legend" id="recPer" style="gap:8px;margin:0 0 6px;align-items:center;flex-wrap:wrap">
-  <button class="chip on" data-p="today">Aujourd'hui</button><button class="chip" data-p="yday">Hier</button><button class="chip" data-p="week">Semaine</button><button class="chip" data-p="month">Mois</button><button class="chip" data-p="year">Année</button><select id="selM" class="chip" aria-label="Choisir un mois" style="font:inherit;font-size:13px;padding:5px 8px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text)"></select><select id="selY" class="chip" aria-label="Choisir une année" style="font:inherit;font-size:13px;padding:5px 8px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text)"></select>
+  <button class="chip on" data-p="today">Aujourd'hui</button><button class="chip" data-p="yday">Hier</button><button class="chip" data-p="week">Semaine</button><button class="chip" data-p="month">Mois</button><button class="chip" data-p="year">Année</button>
   <span class="muted" id="recStatus" style="margin-left:auto;font-size:12px"></span><button class="chip" id="recRefresh" type="button" style="margin-left:8px">↻ Actualiser</button>
 </div>
-<style>@media (min-width:721px){#recTiles{grid-template-columns:repeat(4,1fr)}}</style><style>#recPer select.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}</style><div class="tiles" id="recTiles"></div>
+<style>@media (min-width:721px){#recTiles{grid-template-columns:repeat(4,1fr)}}</style><div class="tiles" id="recTiles"></div>
 <h2>Par shop <span id="recTitle" class="muted" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
 <div class="card scroll"><table id="recTbl"></table></div>
 <p class="note" id="recNote"></p>
@@ -108,26 +108,18 @@ async function start(){
   const iso=d=>d.toISOString().slice(0,10); const D=s=>new Date(s+'T12:00:00');
   R.today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Brussels'}); const today=D(R.today); let LIVE=null; let per=(['today','yday','week','month','year'].includes(new URLSearchParams(location.search).get('p'))?new URLSearchParams(location.search).get('p'):'today');
   const fr=d=>d.toLocaleDateString('fr-BE',{weekday:'short',day:'2-digit',month:'2-digit'});
-  // mois / année antérieurs choisis dans les listes (null = période en cours)
-  const QS=new URLSearchParams(location.search); let selM=/^\d{4}-\d{2}$/.test(QS.get('m')||'')?QS.get('m'):null, selY=/^\d{4}$/.test(QS.get('y')||'')?QS.get('y'):null;
-  const curM=R.today.slice(0,7), curY=R.today.slice(0,4);
-  if(selM===curM) selM=null; if(selY===curY) selY=null;
-  const eom=m=>{ const [y,mo]=m.split('-').map(Number); return m+'-'+String(new Date(y,mo,0).getDate()).padStart(2,'0'); };
-  const prevMonth=m=>{ const [y,mo]=m.split('-').map(Number); return mo===1?(y-1)+'-12':y+'-'+String(mo-1).padStart(2,'0'); };
   function range(p,base){ // [from,to] inclus, en ISO
     const b=base||today; const t=iso(b);
     if(p==='today') return [t,t];
     if(p==='yday'){const y=new Date(b); y.setDate(y.getDate()-1); return [iso(y),iso(y)];}
     if(p==='week'){const m=new Date(b); m.setDate(m.getDate()-((m.getDay()+6)%7)); return [iso(m),t];}
-    if(p==='month'){ if(selM&&!base) return [selM+'-01',eom(selM)]; return [t.slice(0,8)+'01',t]; }
-    if(selY&&!base) return [selY+'-01-01',selY+'-12-31'];
+    if(p==='month') return [t.slice(0,8)+'01',t];
     return [t.slice(0,4)+'-01-01',t];
   }
   function prevRange(p){ // même période écoulée, période précédente
     const [a,b]=range(p); const A=D(a),B=D(b);
     if(p==='today'||p==='yday'){const x=new Date(A); x.setDate(x.getDate()-7); return [iso(x),iso(x)];}
     if(p==='week'){const x=new Date(A),y=new Date(B); x.setDate(x.getDate()-7); y.setDate(y.getDate()-7); return [iso(x),iso(y)];}
-    if(p==='month'&&selM){ const pm=prevMonth(selM); return [pm+'-01',eom(pm)]; }
     if(p==='month'){const x=new Date(A); x.setMonth(x.getMonth()-1); const y=new Date(B); y.setMonth(y.getMonth()-1); return [iso(x),iso(y)];}
     return null;
   }
@@ -139,9 +131,8 @@ async function start(){
     else { // période qui commence avant la fenêtre détaillée (année) : mois complets jusqu'au mois de `lim` exclu, puis
       // pour le mois de `lim` et les suivants, le total du mois (détail jour inutile), sauf le mois de `b` qui peut être en cours → jours détaillés
       const mb=b.slice(0,7);
-      const fullB=mb<curM&&b>=eom(mb);   // période qui se termine par un mois passé complet → total du mois
-      for(const m in months){ if(m+'-01'<a||m>mb) continue; if(m<mb||fullB) months[m].forEach((x,i)=>v[i]+=x); }
-      if(!fullB) for(const d in days) if(d.slice(0,7)===mb&&d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x);
+      for(const m in months){ if(m+'-01'<a||m>mb) continue; if(m<mb) months[m].forEach((x,i)=>v[i]+=x); }
+      for(const d in days) if(d.slice(0,7)===mb&&d>=a&&d<=b) days[d].forEach((x,i)=>v[i]+=x);
     }
     return v;
   }
@@ -151,12 +142,12 @@ async function start(){
     const rows=R.stores.map(s=>({name:s.name,id:s.id,v:sumStore(s.id,a,b),pv:pr?sumStore(s.id,pr[0],pr[1]):null})).filter(r=>r.v[FI.tickets]>0||per==='today');
     const tot=Z(); rows.forEach(r=>r.v.forEach((x,i)=>tot[i]+=x)); const ptot=pr?Z():null; if(pr) rows.forEach(r=>r.pv.forEach((x,i)=>ptot[i]+=x));
     const n=tot[FI.tickets], ttc=tot[FI.ttc], ht=tot[FI.ht], cn=tot[FI.ch_n];
-    const lbl={today:'Aujourd’hui · '+fr(today),yday:'Hier · '+fr(D(a)),week:'Semaine · '+D(a).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'})+' → '+D(b).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'}),month:'Mois · '+D(a).toLocaleDateString('fr-BE',{month:'long',year:'numeric'}),year:'Année '+a.slice(0,4)+(selY&&R.first>selY+'-01-01'?' (données à partir du '+R.first.slice(8)+'/'+R.first.slice(5,7)+')':'')}[per];
-    const cmp=(k)=>ptot?dlt(pct(tot[FI[k]],ptot[FI[k]]))+' <span class="muted">vs '+(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':selM?'mois préc.':'mois préc. à date')+'</span>':'';
+    const lbl={today:'Aujourd’hui · '+fr(today),yday:'Hier · '+fr(D(a)),week:'Semaine · '+D(a).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'})+' → '+D(b).toLocaleDateString('fr-BE',{day:'2-digit',month:'2-digit'}),month:'Mois · '+D(a).toLocaleDateString('fr-BE',{month:'long',year:'numeric'}),year:'Année '+a.slice(0,4)}[per];
+    const cmp=(k)=>ptot?dlt(pct(tot[FI[k]],ptot[FI[k]]))+' <span class="muted">vs '+(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':'mois préc. à date')+'</span>':'';
     // CA séparé : shops en propre (bleu) / franchisés (vert, Louvain-la-Neuve + Pl. du Luxembourg)
     const FRT=new Set([12424,13305]); const own=Z(), frc=Z(), pown=pr?Z():null, pfr=pr?Z():null;
     rows.forEach(r=>{ const f=FRT.has(+r.id); r.v.forEach((x,i)=>(f?frc:own)[i]+=x); if(pr) r.pv.forEach((x,i)=>(f?pfr:pown)[i]+=x); });
-    const vs=(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':selM?'mois préc.':'mois préc. à date');
+    const vs=(per==='today'||per==='yday'?'il y a 7 j':per==='week'?'sem. préc. à date':'mois préc. à date');
     const cmpX=(cur,prev,k)=>prev?dlt(pct(cur[FI[k]],prev[FI[k]]))+' <span class="muted">vs '+vs+'</span>':'';
     const share=(k,c)=>(tot[FI[k]]?(c?' · ':'')+Math.round(frc[FI[k]]/tot[FI[k]]*100)+' % du réseau':'');
     document.getElementById('recTiles').innerHTML=[
@@ -182,21 +173,9 @@ async function start(){
       + (()=>{const F=rows.filter(r=>FRANCH.has(+r.id)); if(!F.length) return ''; const s=k=>F.reduce((a,r)=>a+r.v[FI[k]],0); const st=ttc-s('ttc'), sh=ht-s('ht'), sn=n-s('tickets'); return `<tr class="muted"><td style="text-align:left">dont shops en propre</td><td>${eur(st)}</td><td>${eur(sh)}</td>${pr?'<td></td>':''}<td>${num(sn)}</td><td>${sn?eur2(st/sn):'—'}</td><td>${BF(tot[FI.drink_ttc]-s('drink_ttc'),tot[FI.food_ttc]-s('food_ttc'))}</td><td colspan="6"></td></tr><tr style="color:#2e9e57"><td style="text-align:left">dont franchisés</td><td>${eur(s('ttc'))}</td><td>${eur(s('ht'))}</td>${pr?'<td></td>':''}<td>${num(s('tickets'))}</td><td>${s('tickets')?eur2(s('ttc')/s('tickets')):'—'}</td><td>${BF(s('drink_ttc'),s('food_ttc'))}</td><td colspan="6"></td></tr>`;})();
     document.getElementById('recNote').innerHTML=`Tickets de vente normaux Restomax (hors remboursements et tickets annulés), canal = type de consommation du ticket ; plateformes = origine de la commande (Uber Eats, Deliveroo, Takeaway.com). Historique jusqu'au ${R.last.slice(8)}/${R.last.slice(5,7)} rebâti chaque matin à 7h41 ; la journée en cours est rafraîchie toutes les 15 minutes de 9h à 23h.`+(()=>{const y=R.today.slice(0,4); const miss=[]; for(let m=1;m<=+R.today.slice(5,7);m++){const ym=y+'-'+String(m).padStart(2,'0'); const dim=new Date(+y,m,0).getDate(); const have=R.coverage[ym]||0; const need=ym===R.today.slice(0,7)?+R.today.slice(8)-1:dim; if(have<need) miss.push(new Date(ym+'-01T12:00').toLocaleDateString('fr-BE',{month:'short'})+(have?` (${have}/${need} j)`:''));} return miss.length?` <b>Historique par canal incomplet</b> (chargement progressif, quota API Restomax) : ${miss.join(', ')} — la vue Année est partielle.`:'';})()+(cn<n*0.98?` <b>Répartition par canal</b> connue sur ${Math.round(100*cn/n)} % des tickets de la période (le reste vient des clôtures de caisse, sans détail canal, en cours de chargement) : les % sur place / à emporter / livraison portent sur ces tickets.`:'');
   }
-  // listes Mois / Année : périodes antérieures (historique des mois depuis R.first)
-  const MOIS=new Set(); Object.values(R.months).forEach(o=>Object.keys(o).forEach(m=>MOIS.add(m)));
-  const ML=[...MOIS].filter(m=>m<curM).sort().reverse(), YL=[...new Set([...MOIS].map(m=>m.slice(0,4)))].filter(y=>y<curY).sort().reverse();
-  const mName=m=>new Date(m+'-15T12:00:00').toLocaleDateString('fr-BE',{month:'long',year:'numeric'});
-  const sM=document.getElementById('selM'), sY=document.getElementById('selY');
-  sM.innerHTML='<option value="">Mois antérieur…</option>'+ML.map(m=>`<option value="${m}">${mName(m)}</option>`).join('');
-  sY.innerHTML='<option value="">Année antérieure…</option>'+YL.map(y=>`<option value="${y}">${y}${R.first>y+'-01-01'?' (partielle)':''}</option>`).join('');
-  if(!YL.length) sY.style.display='none';
-  const syncUI=()=>{ document.querySelectorAll('#recPer .chip[data-p]').forEach(x=>x.classList.toggle('on',x.dataset.p===per&&!(per==='month'&&selM)&&!(per==='year'&&selY))); sM.value=selM||''; sY.value=selY||''; sM.classList.toggle('on',!!selM&&per==='month'); sY.classList.toggle('on',!!selY&&per==='year'); };
-  document.querySelectorAll('#recPer .chip[data-p]').forEach(b=>{ b.onclick=()=>{ per=b.dataset.p; selM=null; selY=null; syncUI(); render(); }; });
-  sM.onchange=()=>{ if(!sM.value) return; per='month'; selM=sM.value; selY=null; syncUI(); render(); };
-  sY.onchange=()=>{ if(!sY.value) return; per='year'; selY=sY.value; selM=null; syncUI(); render(); };
-  if(selM) per='month'; if(selY) per='year'; syncUI();
+  document.querySelectorAll('#recPer .chip[data-p]').forEach(b=>{ b.classList.toggle('on',b.dataset.p===per); b.onclick=()=>{document.querySelectorAll('#recPer .chip[data-p]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); per=b.dataset.p; render();}; });
   // bouton Actualiser : recharge toute l'app (dernière version + données) en gardant la période affichée
-  const reloadKeep=()=>location.replace(location.pathname+'?r='+Date.now()+'&p='+per+(selM?'&m='+selM:'')+(selY?'&y='+selY:'')+location.hash);
+  const reloadKeep=()=>location.replace(location.pathname+'?r='+Date.now()+'&p='+per+location.hash);
   document.getElementById('recRefresh').onclick=function(){ this.textContent='↻ …'; reloadKeep(); };
   function status(txt,ok){document.getElementById('recStatus').textContent=txt; document.getElementById('liveDot').style.background=ok?'#1f7850':'#aaa';}
   status('journée en cours : chargement…',false); render();
